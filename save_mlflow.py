@@ -3,6 +3,7 @@ import pandas as pd
 import mlflow.pyfunc
 from agent import Agent 
 
+
 class InflationAgentWrapper(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
         # Ничего не грузим заранее — агент инициализируется на каждой строке
@@ -61,7 +62,13 @@ def save_to_mlflow(artifacts: dict) -> str:
     }
     """
     project_path = os.path.abspath(os.getcwd())
-    os.environ["MLFLOW_TRACKING_URI"] = f"file:///{project_path}/mlruns"
+
+    # Создаем папку mlruns, если её нет
+    mlruns_path = os.path.join(project_path, "mlruns")
+    os.makedirs(mlruns_path, exist_ok=True)
+
+    os.environ["MLFLOW_TRACKING_URI"] = f"file://{mlruns_path}"
+
     ensure_gitignore("mlruns/")
     mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
@@ -71,7 +78,7 @@ def save_to_mlflow(artifacts: dict) -> str:
         mlflow.pyfunc.log_model(
             artifact_path=artifacts["artifact_path"],
             python_model=artifacts["python_model"],
-            code_path=artifacts.get("code_paths"),
+            code_paths=artifacts.get("code_paths"),
             input_example=artifacts.get("input_example")
         )
 
@@ -84,3 +91,4 @@ def save_to_mlflow(artifacts: dict) -> str:
         run_id = run.info.run_id
         print(f"Модель и дополнительные артефакты залогированы в run: {run_id}")
         return run_id
+    
